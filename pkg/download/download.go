@@ -28,6 +28,13 @@ func NewDownloader(baseApi, accessKey, destPath string, maxPageLimit int) *downl
 }
 
 func (d *downloader) Download(collectionID string) {
+
+	d.triggerDownloads(d.collectUrls(collectionID))
+	fmt.Println("Done")
+}
+
+func (d *downloader) collectUrls(collectionID string) map[string]string {
+
 	collectionIds := []string{collectionID}
 	downloadUrls := make(map[string]string)
 
@@ -86,7 +93,10 @@ func (d *downloader) Download(collectionID string) {
 	}
 	wg.Wait()
 	close(writes)
+	return downloadUrls
+}
 
+func (d *downloader) triggerDownloads(downloadUrls map[string]string) {
 	var wgD sync.WaitGroup
 	for k, v := range downloadUrls {
 		wgD.Add(1)
@@ -102,5 +112,4 @@ func (d *downloader) Download(collectionID string) {
 		}(v, k)
 	}
 	wgD.Wait()
-	fmt.Println("Done")
 }
