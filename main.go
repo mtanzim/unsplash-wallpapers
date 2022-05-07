@@ -12,7 +12,7 @@ import (
 
 const baseApi = "https://api.unsplash.com"
 
-// cap out at nx10
+// cap number of images out at nx10
 const maxPageLimit = 1
 const destPath = "./images"
 
