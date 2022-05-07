@@ -11,21 +11,23 @@ import (
 	"github.com/mtanzim/unsplash-wallpapers/collections"
 )
 
-type Downloader struct {
+type downloader struct {
 	baseApi      string
 	maxPageLimit int
 	accessKey    string
+	destPath     string
 }
 
-func NewDownloader(baseApi, accessKey string, maxPageLimit int) *Downloader {
-	return &Downloader{
+func NewDownloader(baseApi, accessKey, destPath string, maxPageLimit int) *downloader {
+	return &downloader{
 		baseApi:      baseApi,
 		maxPageLimit: maxPageLimit,
 		accessKey:    accessKey,
+		destPath:     destPath,
 	}
 }
 
-func (d *Downloader) Download(collectionID string) {
+func (d *downloader) Download(collectionID string) {
 	collectionIds := []string{collectionID}
 	downloadUrls := make(map[string]string)
 
@@ -46,13 +48,13 @@ func (d *Downloader) Download(collectionID string) {
 		}
 	}()
 
-	var wgCollect sync.WaitGroup
+	var wg sync.WaitGroup
 	for _, collectionId := range collectionIds {
 		for i := 1; i <= maxPageLimit; i++ {
-			wgCollect.Add(1)
+			wg.Add(1)
 
 			go func(page int, colId string) {
-				defer wgCollect.Done()
+				defer wg.Done()
 				apiUrl := fmt.Sprintf("%s/collections/%s/photos/?client_id=%s&page=%d", baseApi, colId, access, page)
 				fmt.Println(apiUrl)
 				resp, err := http.Get(apiUrl)
@@ -82,22 +84,23 @@ func (d *Downloader) Download(collectionID string) {
 
 		}
 	}
-	wgCollect.Wait()
+	wg.Wait()
+	close(writes)
 
-	var wg sync.WaitGroup
+	var wgD sync.WaitGroup
 	for k, v := range downloadUrls {
-		wg.Add(1)
+		wgD.Add(1)
 		go func(url, fileName string) {
-			defer wg.Done()
+			defer wgD.Done()
 			ext := "jpg"
 			fn := fmt.Sprintf("%s.%s", fileName, ext)
-			err := downloadFile(url, fn)
+			err := d.downloadFile(url, fn)
 			if err != nil {
 				log.Println(err)
 			}
 
 		}(v, k)
 	}
-	wg.Wait()
+	wgD.Wait()
 	fmt.Println("Done")
 }

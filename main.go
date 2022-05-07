@@ -13,7 +13,8 @@ import (
 const baseApi = "https://api.unsplash.com"
 
 // cap out at 10x10 = 100 images
-const maxPageLimit = 10
+const maxPageLimit = 1
+const destPath = "./images"
 
 func main() {
 	fmt.Println("Hello unsplash")
@@ -37,7 +38,7 @@ func main() {
 		return
 	}
 
-	downloader := download.NewDownloader(baseApi, access, maxPageLimit)
+	downloader := download.NewDownloader(baseApi, access, destPath, maxPageLimit)
 	downloader.Download(*collectionPtr)
 
 }

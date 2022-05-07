@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-func downloadFile(URL, fileName string) error {
+func (d *downloader) downloadFile(URL, fileName string) error {
 	response, err := http.Get(URL)
 	if err != nil {
 		return err
@@ -20,7 +20,7 @@ func downloadFile(URL, fileName string) error {
 		return errors.New("received non 200 response code")
 	}
 
-	dir := "images"
+	dir := d.destPath
 	path := fmt.Sprintf("%s/%s", dir, fileName)
 	file, err := create(path)
 	if err != nil {
