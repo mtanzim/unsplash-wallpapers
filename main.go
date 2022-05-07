@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/mtanzim/unsplash-wallpapers/pkg/download"
+	"github.com/mtanzim/unsplash-wallpapers/pkg/downloader"
 )
 
 const baseApi = "https://api.unsplash.com"
@@ -38,7 +38,7 @@ func main() {
 		return
 	}
 
-	downloader := download.NewDownloader(baseApi, access, destPath, maxPageLimit)
+	downloader := downloader.NewDownloader(baseApi, access, destPath, maxPageLimit)
 	downloader.Download(*collectionPtr)
 
 }
