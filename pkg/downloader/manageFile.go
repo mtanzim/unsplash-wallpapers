@@ -8,7 +8,18 @@ import (
 	"os"
 )
 
-func (d *downloader) downloadFile(URL, fileName string) (string, error) {
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+func downloadFile(URL, fileName, destPath string) (string, error) {
 	response, err := http.Get(URL)
 	if err != nil {
 		return "", err
@@ -19,7 +30,7 @@ func (d *downloader) downloadFile(URL, fileName string) (string, error) {
 		return "", errors.New("received non 200 response code")
 	}
 
-	dir := d.destPath
+	dir := destPath
 	path := fmt.Sprintf("%s/%s", dir, fileName)
 	file, err := os.Create(path)
 	if err != nil {

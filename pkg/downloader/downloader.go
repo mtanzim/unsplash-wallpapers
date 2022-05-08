@@ -15,21 +15,25 @@ type downloader struct {
 	baseApi      string
 	maxPageLimit int
 	accessKey    string
-	destPath     string
 }
 
-func NewDownloader(baseApi, accessKey, destPath string, maxPageLimit int) *downloader {
+func NewDownloader(baseApi, accessKey string, maxPageLimit int) *downloader {
+
 	return &downloader{
 		baseApi:      baseApi,
 		maxPageLimit: maxPageLimit,
 		accessKey:    accessKey,
-		destPath:     destPath,
 	}
 }
 
-func (d *downloader) Download(collectionID string) []string {
+func (d *downloader) Download(collectionID string, destPath string) []string {
 
-	return d.triggerDownloads(d.collectUrls(collectionID))
+	dirExists, err := exists(destPath)
+	if !dirExists || err != nil {
+		return []string{"Destination directroy does not exist"}
+	}
+
+	return d.triggerDownloads(d.collectUrls(collectionID), destPath)
 
 }
 
@@ -96,7 +100,7 @@ func (d *downloader) collectUrls(collectionID string) map[string]string {
 	return downloadUrls
 }
 
-func (d *downloader) triggerDownloads(downloadUrls map[string]string) []string {
+func (d *downloader) triggerDownloads(downloadUrls map[string]string, destPath string) []string {
 
 	results := []string{}
 	writes := make(chan string)
@@ -115,7 +119,7 @@ func (d *downloader) triggerDownloads(downloadUrls map[string]string) []string {
 			defer wgD.Done()
 			ext := "jpg"
 			fn := fmt.Sprintf("%s.%s", fileName, ext)
-			path, err := d.downloadFile(url, fn)
+			path, err := downloadFile(url, fn, destPath)
 			if err != nil {
 				log.Println(err)
 				writes <- err.Error()
