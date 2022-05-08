@@ -125,7 +125,7 @@ func (d *downloader) triggerDownloads(downloadUrls map[string]string, destPath s
 				writes <- err.Error()
 				return
 			}
-			writes <- fmt.Sprintf("Downlaoded %s to: %s", url, path)
+			writes <- fmt.Sprintf("Downloaded %s to %s", url, path)
 
 		}(v, k)
 	}
