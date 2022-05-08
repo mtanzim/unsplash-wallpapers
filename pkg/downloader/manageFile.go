@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 )
 
 func (d *downloader) downloadFile(URL, fileName string) (string, error) {
@@ -22,7 +21,7 @@ func (d *downloader) downloadFile(URL, fileName string) (string, error) {
 
 	dir := d.destPath
 	path := fmt.Sprintf("%s/%s", dir, fileName)
-	file, err := create(path)
+	file, err := os.Create(path)
 	if err != nil {
 		return "", err
 	}
@@ -34,12 +33,4 @@ func (d *downloader) downloadFile(URL, fileName string) (string, error) {
 	}
 
 	return path, nil
-}
-
-// TODO: will this work correctly if run from elsewhere?
-func create(p string) (*os.File, error) {
-	if err := os.MkdirAll(filepath.Dir(p), 0770); err != nil {
-		return nil, err
-	}
-	return os.Create(p)
 }
