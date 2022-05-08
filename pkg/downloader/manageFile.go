@@ -9,31 +9,31 @@ import (
 	"path/filepath"
 )
 
-func (d *downloader) downloadFile(URL, fileName string) error {
+func (d *downloader) downloadFile(URL, fileName string) (string, error) {
 	response, err := http.Get(URL)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return errors.New("received non 200 response code")
+		return "", errors.New("received non 200 response code")
 	}
 
 	dir := d.destPath
 	path := fmt.Sprintf("%s/%s", dir, fileName)
 	file, err := create(path)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer file.Close()
 	_, err = io.Copy(file, response.Body)
 	fmt.Printf("Downloaded %s\n", path)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return path, nil
 }
 
 // TODO: will this work correctly if run from elsewhere?

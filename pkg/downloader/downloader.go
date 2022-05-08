@@ -27,10 +27,10 @@ func NewDownloader(baseApi, accessKey, destPath string, maxPageLimit int) *downl
 	}
 }
 
-func (d *downloader) Download(collectionID string) {
+func (d *downloader) Download(collectionID string) []string {
 
-	d.triggerDownloads(d.collectUrls(collectionID))
-	fmt.Println("Done")
+	return d.triggerDownloads(d.collectUrls(collectionID))
+
 }
 
 func (d *downloader) collectUrls(collectionID string) map[string]string {
@@ -96,7 +96,18 @@ func (d *downloader) collectUrls(collectionID string) map[string]string {
 	return downloadUrls
 }
 
-func (d *downloader) triggerDownloads(downloadUrls map[string]string) {
+func (d *downloader) triggerDownloads(downloadUrls map[string]string) []string {
+
+	results := []string{}
+	writes := make(chan string)
+
+	// isolate slice mutations in a single goroutine
+	go func() {
+		for msg := range writes {
+			results = append(results, msg)
+		}
+	}()
+
 	var wgD sync.WaitGroup
 	for k, v := range downloadUrls {
 		wgD.Add(1)
@@ -104,12 +115,17 @@ func (d *downloader) triggerDownloads(downloadUrls map[string]string) {
 			defer wgD.Done()
 			ext := "jpg"
 			fn := fmt.Sprintf("%s.%s", fileName, ext)
-			err := d.downloadFile(url, fn)
+			path, err := d.downloadFile(url, fn)
 			if err != nil {
 				log.Println(err)
+				writes <- err.Error()
+				return
 			}
+			writes <- fmt.Sprintf("Downlaoded %s to: %s", url, path)
 
 		}(v, k)
 	}
 	wgD.Wait()
+	close(writes)
+	return results
 }

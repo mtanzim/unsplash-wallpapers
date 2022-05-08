@@ -13,12 +13,11 @@ import (
 const baseApi = "https://api.unsplash.com"
 
 // cap number of images out at nx10
-const maxPageLimit = 1
 const destPath = "./images"
 
 func main() {
-	fmt.Println("Hello unsplash")
 	collectionPtr := flag.String("c", "", "a collection id")
+	pages := flag.Int("p", 1, "number of pages")
 
 	err := godotenv.Load()
 	if err != nil {
@@ -38,7 +37,8 @@ func main() {
 		return
 	}
 
-	downloader := downloader.NewDownloader(baseApi, access, destPath, maxPageLimit)
-	downloader.Download(*collectionPtr)
+	downloader := downloader.NewDownloader(baseApi, access, destPath, *pages)
+	res := downloader.Download(*collectionPtr)
+	fmt.Println(res)
 
 }
