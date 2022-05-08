@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -33,14 +34,17 @@ func (d *downloader) Download(collectionID string, destPath string) []string {
 		return []string{"Destination directroy does not exist"}
 	}
 
-	return d.triggerDownloads(d.collectUrls(collectionID), destPath)
+	urls, urlErrorMessages := d.collectUrls(collectionID)
+	downloadMessages := d.triggerDownloads(urls, destPath)
+	return append(urlErrorMessages, downloadMessages...)
 
 }
 
-func (d *downloader) collectUrls(collectionID string) map[string]string {
+func (d *downloader) collectUrls(collectionID string) (map[string]string, []string) {
 
 	collectionIds := []string{collectionID}
 	downloadUrls := make(map[string]string)
+	urlErrors := []string{}
 
 	access := d.accessKey
 	maxPageLimit := d.maxPageLimit
@@ -51,11 +55,19 @@ func (d *downloader) collectUrls(collectionID string) map[string]string {
 		value string
 	}
 	writes := make(chan mapMsg)
+	errorWrites := make(chan string)
 
 	// isolate map mutations in a single goroutine
 	go func() {
 		for msg := range writes {
 			downloadUrls[msg.key] = msg.value
+		}
+	}()
+
+	// isolate slice mutations in a single goroutine
+	go func() {
+		for msg := range errorWrites {
+			urlErrors = append(urlErrors, msg)
 		}
 	}()
 
@@ -71,20 +83,27 @@ func (d *downloader) collectUrls(collectionID string) map[string]string {
 				resp, err := http.Get(apiUrl)
 				if err != nil {
 					log.Println(err)
+					errorWrites <- err.Error()
 					return
 				}
 				defer resp.Body.Close()
 
 				body, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
-					log.Fatalln(err)
+					errorWrites <- err.Error()
+					log.Println(err)
+					return
+
 				}
 				if resp.StatusCode != http.StatusOK {
-					log.Printf("unexpected response, stausCode: %d; body: %s", resp.StatusCode, string(body))
+					errMsg := fmt.Sprintf("unexpected response, stausCode: %d; body: %s", resp.StatusCode, string(body))
+					errorWrites <- errors.New(errMsg).Error()
+					log.Print(errMsg)
 					return
 				}
 				var dat collections.Collections
 				if err := json.Unmarshal(body, &dat); err != nil {
+					errorWrites <- err.Error()
 					log.Printf("err: %s, body: %s", err, string(body))
 					return
 				}
@@ -97,7 +116,8 @@ func (d *downloader) collectUrls(collectionID string) map[string]string {
 	}
 	wg.Wait()
 	close(writes)
-	return downloadUrls
+	close(errorWrites)
+	return downloadUrls, urlErrors
 }
 
 func (d *downloader) triggerDownloads(downloadUrls map[string]string, destPath string) []string {
