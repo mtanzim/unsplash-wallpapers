@@ -13,41 +13,39 @@ import (
 )
 
 type downloader struct {
-	baseApi      string
-	maxPageLimit int
-	accessKey    string
+	baseApi   string
+	accessKey string
 }
 
-func NewDownloader(baseApi, accessKey string, maxPageLimit int) *downloader {
+func NewDownloader(baseApi, accessKey string) *downloader {
 
 	return &downloader{
-		baseApi:      baseApi,
-		maxPageLimit: maxPageLimit,
-		accessKey:    accessKey,
+		baseApi:   baseApi,
+		accessKey: accessKey,
 	}
 }
 
-func (d *downloader) Download(collectionID string, destPath string) []string {
+func (d *downloader) Download(collectionID string, destPath string, pages int) []string {
 
 	dirExists, err := exists(destPath)
 	if !dirExists || err != nil {
 		return []string{"Destination directroy does not exist"}
 	}
 
-	urls, urlErrorMessages := d.collectUrls(collectionID)
+	urls, urlErrorMessages := d.collectUrls(collectionID, pages)
 	downloadMessages := d.triggerDownloads(urls, destPath)
 	return append(urlErrorMessages, downloadMessages...)
 
 }
 
-func (d *downloader) collectUrls(collectionID string) (map[string]string, []string) {
+func (d *downloader) collectUrls(collectionID string, pages int) (map[string]string, []string) {
 
 	collectionIds := []string{collectionID}
 	downloadUrls := make(map[string]string)
 	urlErrors := []string{}
 
+	maxPageLimit := pages
 	access := d.accessKey
-	maxPageLimit := d.maxPageLimit
 	baseApi := d.baseApi
 
 	type mapMsg struct {

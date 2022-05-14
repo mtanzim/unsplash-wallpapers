@@ -40,8 +40,8 @@ func main() {
 		return
 	}
 
-	downloader := downloader.NewDownloader(baseApi, access, *pages)
-	res := downloader.Download(*collectionPtr, *dest)
+	downloader := downloader.NewDownloader(baseApi, access)
+	res := downloader.Download(*collectionPtr, *dest, *pages)
 	fmt.Println(res)
 
 }
